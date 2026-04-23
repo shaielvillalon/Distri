@@ -1,7 +1,9 @@
 package services;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -72,17 +74,34 @@ public class Servicio {
 	@Produces(MediaType.TEXT_PLAIN)
 	public String propuesta(@QueryParam("v") int v) {
 		
-		// Reinicia todos los procesos para comenzar una nueva ronda
+		//Reinicia todos los procesos para comenzar una nueva ronda
 		for (Proceso p : procesos) {
 			p.resetear(v);
 		}
 		
-		// El cliente propone el valor a todos los procesos
+		//El cliente propone el valor a todos los procesos
 		for (Proceso p : procesos) {
 			p.propuesta(v);
 		}
 		
-		return "Propuesta lanzada con valor " + v;
+		//Comprobar consenso final
+		Map<Integer, Integer> contador = new HashMap<>();
+		
+		for (Proceso p : procesos) {
+			int val = p.getVariable();
+			if (val != -1) {
+				contador.put(val, contador.getOrDefault(val, 0) + 1);
+			}
+		}
+		
+		//Buscar mayoría
+		for (Integer val : contador.keySet()) {
+			if (contador.get(val) >= (procesos.size() / 2 + 1)) {
+				return "CONSENSO ALCANZADO para valor " + val;
+			}
+		}
+		
+		return "NO se alcanzó consenso";
 	}
 	
 	@GET

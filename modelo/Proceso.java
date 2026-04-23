@@ -65,12 +65,12 @@ public class Proceso extends Thread {
 		this.error = error;
 	}
 	
-	public List<Integer> getCompromisos() { // Devuelve la lista de compromisos recibidos
-		return compromisos;
+	public List<Integer> getCompromisos() { // Devuelve una copia de la lista de compromisos recibidos
+		return new ArrayList<>(compromisos);
 	}
 	
-	public List<Integer> getComisiones() { // Devuelve la lista de comisiones recibidas
-		return comisiones;
+	public List<Integer> getComisiones() { // Devuelve una copia de la lista de comisiones recibidas
+		return new ArrayList<>(comisiones);
 	}
 	
 	public void setProcesos(List<Proceso> procesos) { //Asigna la red de procesos con la que este nodo interactúa
@@ -131,7 +131,6 @@ public class Proceso extends Thread {
 	 * demás nodos. A sí mismo se puede mandar el valor correcto.
 	 */
 	public synchronized void propuesta(int v) {
-		resetear(v);
 		
 		for (Proceso p : procesos) {
 			int valorEnviar;
@@ -139,7 +138,7 @@ public class Proceso extends Thread {
 			if (this.error && p.getProcesoId() != this.id) {
 				valorEnviar = random.nextInt(101); // valor aleatorio
 			} else {
-				valorEnviar = valorPropuesto;
+				valorEnviar = v;
 			}
 			
 			p.compromiso(valorEnviar);
