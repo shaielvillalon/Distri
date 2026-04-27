@@ -1,9 +1,9 @@
 package services;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+//import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+//import java.util.Map;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -23,7 +23,15 @@ import modelo.Proceso;
 
 public class Servicio {
 	
+	private static final String[] URLS = {
+		"http://192.168.1.10:8080/practicaObligatoria/rest/servicio/",
+		"http://192.168.1.10:8080/practicaObligatoria/rest/servicio/",
+		"http://192.168.1.10:8080/practicaObligatoria/rest/servicio/"
+	};
+	
 	// Lista estática de procesos del sistema
+	private static final int TOTAL = 6;
+	
 	static List<Proceso> procesos = new ArrayList<>();
 
 	/* Inicialización de los 6 procesos del sistema
@@ -31,13 +39,14 @@ public class Servicio {
 	 * Después, a cada proceso se le pasa la lista completa para que pueda
 	 * interactuar con el resto de nodos
 	 */
+	
 	static {
 		for (int i=0; i<6; i++) {
-			procesos.add(new Proceso(i+1));
+			procesos.add(new Proceso(i+1, TOTAL));
 		}
 		
 		for (Proceso p : procesos) {
-			p.setProcesos(procesos);
+			p.setServicios(URLS);
 		}
 	}
 	
@@ -54,7 +63,7 @@ public class Servicio {
 	@Produces(MediaType.TEXT_PLAIN)
 	public String estado() {
 		// Cadena que almacenará el estado de todos los procesos
-		String salida = "id\tvalor\te\tcompromisos\tcomisiones\n";
+		String salida = "id\tvalor\terror\tcompromisos\t\t\tcomisiones\n";
 		
 		// Recorre todos los procesos y construye una línea con su información
 		for (Proceso p : procesos) {
@@ -85,7 +94,7 @@ public class Servicio {
 		}
 		
 		//Comprobar consenso final
-		Map<Integer, Integer> contador = new HashMap<>();
+		/*Map<Integer, Integer> contador = new HashMap<>();
 		
 		for (Proceso p : procesos) {
 			int val = p.getVariable();
@@ -99,10 +108,34 @@ public class Servicio {
 			if (contador.get(val) >= (procesos.size() / 2 + 1)) {
 				return "CONSENSO ALCANZADO para valor " + val;
 			}
-		}
+		}*/
 		
 		return "NO se alcanzó consenso";
 	}
+	
+	
+	@GET
+	@Path("compromiso")
+	@Produces(MediaType.TEXT_PLAIN)
+	public String compromiso(@QueryParam("v") int v) {
+		for (Proceso p : procesos) {
+			p.compromiso(v);
+		}
+		return "OK compromiso " + v;
+	}
+	
+	
+	@GET
+	@Path("comision")
+	@Produces(MediaType.TEXT_PLAIN)
+	public String comision(@QueryParam("v") int v) {
+		for (Proceso p : procesos) {
+			p.comision(v);
+		}
+		return "OK comision " + v;
+	}
+	
+	
 	
 	@GET
 	@Path("fallo")
@@ -117,6 +150,18 @@ public class Servicio {
 		}
 		
 		return "No existe un proceso con id " + id;
+	}
+	
+	@GET
+	@Path("reset")
+	@Produces(MediaType.TEXT_PLAIN)
+	public String reset() {
+		for (Proceso p: procesos) {
+			p.resetear(-1);
+			p.setError(false);
+		}
+		
+		return "Sistema reiniciado";
 	}
 	
 	

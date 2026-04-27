@@ -19,7 +19,11 @@ import java.util.Scanner;
 public class Cliente {
 	
 	// URL base del servicio REST
-	private static final String BASE_URL = "http://localhost:8080/practicaObligatoria/rest/servicio/";
+	private static final String[] URLS = {
+			"http://localhost:8080/practicaObligatoria/rest/servicio/",
+			"http://localhost:8080/practicaObligatoria/rest/servicio/",
+			"http://localhost:8080/practicaObligatoria/rest/servicio/"
+	};
 
 	public static void main(String[] args) {
 		Scanner scan = new Scanner(System.in);
@@ -39,6 +43,8 @@ public class Cliente {
 				cambiarFallo(entrada);
 			} else if (entrada.startsWith("s") && entrada.length() > 1) {
 				cambiarValor(entrada);
+			} else if (entrada.equalsIgnoreCase("r")) {
+				realizarPeticion("reset");
 			} else {
 				System.out.println("Entrada no reconocida. Pulsa 'h' para ayuda");
 			}
@@ -52,6 +58,7 @@ public class Cliente {
 		System.out.println("s	-> Mostrar estado");
 		System.out.println("fN	-> Cambiar estado de fallo del proceso N");
 		System.out.println("sX	-> Proponer cambio del valor a X");
+		System.out.println("r\t -> Reiniciar sistema");
 	}
 	
 	// Cambia el estado de fallo de un proceso
@@ -76,8 +83,14 @@ public class Cliente {
 	
 	//Realiza una petición GET al servicio REST y muestra la respuesta 
 	private static void realizarPeticion(String ruta) {
+		for (String s : URLS) {
+			realizarPeticionCompleta(s + ruta);
+		}
+	}
+	
+	private static void realizarPeticionCompleta(String urlStr) {
 		try {
-			URL url = new URL(BASE_URL + ruta);
+			URL url = new URL(urlStr);
 			HttpURLConnection conexion = (HttpURLConnection) url.openConnection();
 			conexion.setRequestMethod("GET");
 			
@@ -92,7 +105,8 @@ public class Cliente {
 			lector.close();
 			conexion.disconnect();
 		} catch (Exception e) {
-			System.out.println("Error al conectar con el servicio: " + e.getMessage());
+			System.out.println("Error: " + e.getMessage());
 		}
 	}
+	
 }

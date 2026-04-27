@@ -19,29 +19,39 @@ public class Proceso extends Thread {
 	private int id; // Identificador único del proceso dentro del sistema
 	private int variable; // Valor sobre el que se aplica el consenso; -1 indica "no decidido"
 	private boolean error; // Indica si el proceso está actuando con comportamiento bizantino
+	
 	private List<Integer> compromisos; // Valores recibidos en la fase de compromiso
 	private List<Integer> comisiones; // Valores recibidos en la fase de comisión
-	private List<Proceso> procesos; // Lista de procesos del sistema; se usa para simular la red localmente
+	
+	//private List<Proceso> procesos; // Lista de procesos del sistema; se usa para simular la red localmente
+	
 	private boolean comisionEmitida; // Evita emitir varias veces la comisión cuando ya se alcanzó mayoría
 	private boolean confirmacionEmitida; //Evita confirmar varias veces cuando ya se alcanzó mayoría en comisiones
+	
 	private Random random; //Generador aleatorio para simular fallos bizantinos
-	private int valorPropuesto; //Valor propuesto en la ronda actual
+	
+	//private int valorPropuesto; //Valor propuesto en la ronda actual
+	
+	private String[] urls; //URLs de los servicios REST de las máquinas
+	
+	private int totalProcesos; //Nº total de procesos del sistema
 	
 	/* Constructor del proceso
 	 * Inicializa el id, deja la variable sin decidir y crea
 	 * las estructuras internas necesarias para la ejecución del consenso
 	 */
-	public Proceso(int id) {
+	public Proceso(int id, int totalProcesos) {
 		this.id = id;
+		this.totalProcesos = totalProcesos;
 		this.variable = -1;
 		this.error = false;
 		this.compromisos = new ArrayList<>();
 		this.comisiones = new ArrayList<>();
-		this.procesos = new ArrayList<>();
+		//this.procesos = new ArrayList<>();
 		this.comisionEmitida = false;
 		this.confirmacionEmitida = false;
 		this.random = new Random();
-		this.valorPropuesto = -1;
+		//this.valorPropuesto = -1;
 	}
 	
 	public int getProcesoId() { // Devuelve el id del proceso
@@ -53,9 +63,9 @@ public class Proceso extends Thread {
 		return variable;
 	}
 	
-	public void setVariable(int v) { // Modifica el valor actual del proceso
+	/*public void setVariable(int v) { // Modifica el valor actual del proceso
 		this.variable = v;
-	}
+	}*/
 	
 	public boolean isError() { // Indica si el proceso está en modo fallo bizantino
 		return error;
@@ -73,9 +83,13 @@ public class Proceso extends Thread {
 		return new ArrayList<>(comisiones);
 	}
 	
-	public void setProcesos(List<Proceso> procesos) { //Asigna la red de procesos con la que este nodo interactúa
-		this.procesos = procesos;
+	public void setServicios(String[] urls) {
+		this.urls = urls;
 	}
+	
+	/*public void setProcesos(List<Proceso> procesos) { //Asigna la red de procesos con la que este nodo interactúa
+		this.procesos = procesos;
+	}*/
 	
 	
 	@Override
@@ -93,7 +107,7 @@ public class Proceso extends Thread {
 		this.comisiones.clear();
 		this.comisionEmitida = false;
 		this.confirmacionEmitida = false;
-		this.valorPropuesto = v;
+		//this.valorPropuesto = v;
 	}
 	
 	
@@ -101,8 +115,16 @@ public class Proceso extends Thread {
 	 * P.ej. con 6 procesos el quórum será 4
 	 */
 	private int quorum() {
-		return (procesos.size() / 2) + 1;
+		return (totalProcesos / 2) + 1;
 	}
+	
+	/*private int f() {
+		return (procesos.size() - 1) / 3;
+	}
+	
+	private int quorumPBFT() {
+		return 2 * f() + 1;
+	}*/
 	
 	
 	/* Devuelve el valor que ha alcanzado quórum dentro de una lista de valores
@@ -132,16 +154,21 @@ public class Proceso extends Thread {
 	 */
 	public synchronized void propuesta(int v) {
 		
-		for (Proceso p : procesos) {
+		if (urls == null) {
+			System.out.println("No hay servicios configurados");
+			return;
+		}
+		
+		for (String url : urls) {
 			int valorEnviar;
 			
-			if (this.error && p.getProcesoId() != this.id) {
+			if (this.error) {
 				valorEnviar = random.nextInt(101); // valor aleatorio
 			} else {
 				valorEnviar = v;
 			}
 			
-			p.compromiso(valorEnviar);
+			enviar(url + "compromiso?v=" + valorEnviar);
 		}
 	}
 	
@@ -159,9 +186,11 @@ public class Proceso extends Thread {
 		if (valorConQuorum != null && !comisionEmitida) {
 			comisionEmitida = true;
 			
-			for (Proceso p : procesos) {
-				p.comision(valorConQuorum);
+			
+			for (String s : urls) {
+				enviar(s + "comision?v=" + valorConQuorum);
 			}
+			
 		}
 	}
 	
@@ -193,6 +222,18 @@ public class Proceso extends Thread {
 		System.out.println("Proceso " + id + " confirma valor " + variable);
 	}
 
+	
+	private void enviar(String urlStr) {
+		try {
+			java.net.URL url = new java.net.URL(urlStr);
+			java.net.HttpURLConnection c = (java.net.HttpURLConnection) url.openConnection();
+			c.setRequestMethod("GET");
+			c.getInputStream().close();
+			c.disconnect();
+		} catch (Exception e) {
+			System.out.println("Error enviado a " + urlStr);
+		}
+	}
 		
 	
 }
