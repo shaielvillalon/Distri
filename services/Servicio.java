@@ -1,6 +1,10 @@
 package services;
 
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
 //import java.util.HashMap;
 import java.util.List;
 //import java.util.Map;
@@ -10,6 +14,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+
 
 import modelo.Proceso;
 
@@ -24,45 +29,74 @@ import modelo.Proceso;
 public class Servicio {
 	
 	private static final String[] URLS = {
-		"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/",
-		"http://172.20.7.121:8080/practicaObligatoria/rest/servicio/",
-		"http://172.20.7.106:8080/practicaObligatoria/rest/servicio/"
-	};
-	
-	// Lista estática de procesos del sistema
-	private static final int TOTAL = 6;
-	
-	private static final int ID_MAQUINA = Integer.parseInt(
-			System.getProperty("idMaquina", "1")); // idMaquina = 1, 2 o 3
-	
-	private static final int INDICE_MAQUINA = ID_MAQUINA -1;
-	
-	static List<Proceso> procesos = new ArrayList<>();
-	
-	static {
-		// Máquina 1 -> procesos 1 y 2
-		// Máquina 2 -> procesos 3 y 4
-		// Máquina 3 -> procesos 5 y 6
-		int bucle_for = (ID_MAQUINA - 1) * 2 + 1; 
-		for (int i = bucle_for; i < bucle_for + 2; i++) {
-			procesos.add(new Proceso(i, TOTAL, INDICE_MAQUINA));
+			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/",
+			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/",
+			"http://172.20.7.106:8080/practicaObligatoria/rest/servicio/"
+		};
+		
+		// Lista estática de procesos del sistema
+		private static final int TOTAL = 6;
+		
+		//private static final int ID_MAQUINA = Integer.parseInt(
+		//		System.getProperty("idMaquina", "1")); // idMaquina = 1, 2 o 3
+		
+		//private static final int INDICE_MAQUINA = ID_MAQUINA -1;
+		
+		static List<Proceso> procesos = new ArrayList<>();
+		private static int indiceMaquina;
+		
+		static {
+			indiceMaquina = detectarIndice();
+			// Máquina 1 -> procesos 1 y 2
+			// Máquina 2 -> procesos 3 y 4
+			// Máquina 3 -> procesos 5 y 6
+			
+			int idLocal = indiceMaquina * 2 + 1; 
+			
+			for (int i = idLocal; i < idLocal + 2; i++) {
+				procesos.add(new Proceso(i, TOTAL, indiceMaquina));
+			}
+			
+			for (Proceso p : procesos) {
+				p.setServicios(URLS);
+			}
+			
+			System.out.println("Máquina " + (indiceMaquina + 1)
+		            + " — procesos: " + procesos.get(0).getProcesoId()
+		            + " y " + procesos.get(1).getProcesoId());
 		}
 		
-		for (Proceso p : procesos) {
-			p.setServicios(URLS);
-		}
 		
-		System.out.println("Máquina " + ID_MAQUINA
-	            + " — procesos: " + procesos.get(0).getProcesoId()
-	            + " y " + procesos.get(1).getProcesoId());
-	}
+		/* Recorre las interfaces de red buscando la IP que coincida con alguna de las URLs conocidas
+		 * Devuelve el índice de esa URL en el array. Si no, devuelve 0 como fallback */
+		private static int detectarIndice() {
+			try {
+				Enumeration<NetworkInterface> interfaces =
+						NetworkInterface.getNetworkInterfaces();
+				
+				for (NetworkInterface ni : Collections.list(interfaces)) {
+					if (!ni.isUp() || ni.isLoopback()) continue;
+					
+					for (InetAddress addr : Collections.list(ni.getInetAddresses())) {
+						String ip = addr.getHostAddress();
+						for (int i = 0; i<URLS.length; i++) {
+							if (URLS[i].contains(ip)) return i;
+						}
+					}
+				}
+			} catch (Exception e) {
+				System.err.println("Error detectando IP: " + e.getMessage());
+			}
+			System.err.println("IP no reconocida, usando máquina 1 por defecto");
+			return 0;
+		}
 	
 	@GET
 	@Path("hola")
 	@Produces(MediaType.TEXT_PLAIN)
 	public String hola() {
 		// Método de prueba para verificar que el servicio REST está levantado
-		return "Servidor funcionando -> maquina " + ID_MAQUINA;
+		return "Servidor funcionando -> maquina " + (indiceMaquina + 1);
 	}
 	
 	@GET
