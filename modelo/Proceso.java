@@ -33,16 +33,17 @@ public class Proceso extends Thread {
 	//private int valorPropuesto; //Valor propuesto en la ronda actual
 	
 	private String[] urls; //URLs de los servicios REST de las máquinas
-	
+	private int indiceMiUrl; //Índica de la URL de esta máquina en el array 'urls'
 	private int totalProcesos; //Nº total de procesos del sistema
 	
 	/* Constructor del proceso
 	 * Inicializa el id, deja la variable sin decidir y crea
 	 * las estructuras internas necesarias para la ejecución del consenso
 	 */
-	public Proceso(int id, int totalProcesos) {
+	public Proceso(int id, int totalProcesos, int indiceMiUrl) {
 		this.id = id;
 		this.totalProcesos = totalProcesos;
+		this.indiceMiUrl = indiceMiUrl;
 		this.variable = -1;
 		this.error = false;
 		this.compromisos = new ArrayList<>();
@@ -154,21 +155,18 @@ public class Proceso extends Thread {
 	 */
 	public synchronized void propuesta(int v) {
 		
-		if (urls == null) {
-			System.out.println("No hay servicios configurados");
-			return;
-		}
+		if (urls == null) return;
 		
-		for (String url : urls) {
+		for (int i=0; i<urls.length; i++) {
 			int valorEnviar;
 			
-			if (this.error) {
+			if (this.error && i!=indiceMiUrl) {
 				valorEnviar = random.nextInt(101); // valor aleatorio
 			} else {
 				valorEnviar = v;
 			}
 			
-			enviar(url + "compromiso?v=" + valorEnviar);
+			enviar(urls[i] + "compromiso?v=" + valorEnviar);
 		}
 	}
 	

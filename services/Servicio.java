@@ -24,30 +24,37 @@ import modelo.Proceso;
 public class Servicio {
 	
 	private static final String[] URLS = {
-		"http://192.168.1.10:8080/practicaObligatoria/rest/servicio/",
-		"http://192.168.1.10:8080/practicaObligatoria/rest/servicio/",
-		"http://192.168.1.10:8080/practicaObligatoria/rest/servicio/"
+		"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/",
+		"http://172.20.7.121:8080/practicaObligatoria/rest/servicio/",
+		"http://172.20.7.106:8080/practicaObligatoria/rest/servicio/"
 	};
 	
 	// Lista estática de procesos del sistema
 	private static final int TOTAL = 6;
 	
+	private static final int ID_MAQUINA = Integer.parseInt(
+			System.getProperty("idMaquina", "1")); // idMaquina = 1, 2 o 3
+	
+	private static final int INDICE_MAQUINA = ID_MAQUINA -1;
+	
 	static List<Proceso> procesos = new ArrayList<>();
-
-	/* Inicialización de los 6 procesos del sistema
-	 * Cada proceso se crea con un id del 1 al 6
-	 * Después, a cada proceso se le pasa la lista completa para que pueda
-	 * interactuar con el resto de nodos
-	 */
 	
 	static {
-		for (int i=0; i<6; i++) {
-			procesos.add(new Proceso(i+1, TOTAL));
+		// Máquina 1 -> procesos 1 y 2
+		// Máquina 2 -> procesos 3 y 4
+		// Máquina 3 -> procesos 5 y 6
+		int bucle_for = (ID_MAQUINA - 1) * 2 + 1; 
+		for (int i = bucle_for; i < bucle_for + 2; i++) {
+			procesos.add(new Proceso(i, TOTAL, INDICE_MAQUINA));
 		}
 		
 		for (Proceso p : procesos) {
 			p.setServicios(URLS);
 		}
+		
+		System.out.println("Máquina " + ID_MAQUINA
+	            + " — procesos: " + procesos.get(0).getProcesoId()
+	            + " y " + procesos.get(1).getProcesoId());
 	}
 	
 	@GET
@@ -55,7 +62,7 @@ public class Servicio {
 	@Produces(MediaType.TEXT_PLAIN)
 	public String hola() {
 		// Método de prueba para verificar que el servicio REST está levantado
-		return "Servidor funcionando";
+		return "Servidor funcionando -> maquina " + ID_MAQUINA;
 	}
 	
 	@GET
@@ -63,7 +70,7 @@ public class Servicio {
 	@Produces(MediaType.TEXT_PLAIN)
 	public String estado() {
 		// Cadena que almacenará el estado de todos los procesos
-		String salida = "id\tvalor\terror\tcompromisos\t\t\tcomisiones\n";
+		String salida = "id\tvalor\terror\tcompromisos\t\tcomisiones\n";
 		
 		// Recorre todos los procesos y construye una línea con su información
 		for (Proceso p : procesos) {
@@ -84,9 +91,9 @@ public class Servicio {
 	public String propuesta(@QueryParam("v") int v) {
 		
 		//Reinicia todos los procesos para comenzar una nueva ronda
-		for (Proceso p : procesos) {
+		/*for (Proceso p : procesos) {
 			p.resetear(v);
-		}
+		}*/
 		
 		//El cliente propone el valor a todos los procesos
 		for (Proceso p : procesos) {
@@ -110,7 +117,7 @@ public class Servicio {
 			}
 		}*/
 		
-		return "NO se alcanzó consenso";
+		return "Propuesta enviada: " + v;
 	}
 	
 	

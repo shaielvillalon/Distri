@@ -20,9 +20,9 @@ public class Cliente {
 	
 	// URL base del servicio REST
 	private static final String[] URLS = {
-			"http://localhost:8080/practicaObligatoria/rest/servicio/",
-			"http://localhost:8080/practicaObligatoria/rest/servicio/",
-			"http://localhost:8080/practicaObligatoria/rest/servicio/"
+			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/",
+			"http://172.20.7.121:8080/practicaObligatoria/rest/servicio/",
+			"http://172.20.7.106:8080/practicaObligatoria/rest/servicio/"
 	};
 
 	public static void main(String[] args) {
@@ -39,12 +39,12 @@ public class Cliente {
 				ayuda();
 			} else if (entrada.equalsIgnoreCase("s")) {
 				realizarPeticion("estado");
-			} else if (entrada.startsWith("f")) {
-				cambiarFallo(entrada);
-			} else if (entrada.startsWith("s") && entrada.length() > 1) {
-				cambiarValor(entrada);
 			} else if (entrada.equalsIgnoreCase("r")) {
 				realizarPeticion("reset");
+			} else if (entrada.matches("f\\d+")) {
+				cambiarFallo(entrada);
+			} else if (entrada.matches("s\\d+")) {
+				cambiarValor(entrada);
 			} else {
 				System.out.println("Entrada no reconocida. Pulsa 'h' para ayuda");
 			}
@@ -75,6 +75,8 @@ public class Cliente {
 	private static void cambiarValor(String entrada) {
 		try {
 			int valor = Integer.parseInt(entrada.substring(1));
+			
+			realizarPeticion("reset");
 			realizarPeticion("propuesta?v=" + valor);
 		} catch (NumberFormatException e) {
 			System.out.println("Formato incorrecto -> Usa sX (ejemplo: s6");
