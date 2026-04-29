@@ -20,9 +20,9 @@ public class Cliente {
 	
 	// URL base del servicio REST
 	private static final String[] URLS = {
-			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/",
+			"http://192.168.1.204:8080/practicaObligatoria/rest/servicio/",
 			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/",
-			"http://172.20.7.106:8080/practicaObligatoria/rest/servicio/"
+			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/"
 	};
 
 	public static void main(String[] args) {

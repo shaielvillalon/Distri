@@ -29,9 +29,9 @@ import modelo.Proceso;
 public class Servicio {
 	
 	private static final String[] URLS = {
-			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/",
+			"http://192.168.1.204:8080/practicaObligatoria/rest/servicio/",
 			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/",
-			"http://172.20.7.106:8080/practicaObligatoria/rest/servicio/"
+			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/"
 		};
 		
 		// Lista estática de procesos del sistema
