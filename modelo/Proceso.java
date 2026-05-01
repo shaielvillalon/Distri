@@ -222,15 +222,19 @@ public class Proceso extends Thread {
 
 	
 	private void enviar(String urlStr) {
-		try {
-			java.net.URL url = new java.net.URL(urlStr);
-			java.net.HttpURLConnection c = (java.net.HttpURLConnection) url.openConnection();
-			c.setRequestMethod("GET");
-			c.getInputStream().close();
-			c.disconnect();
-		} catch (Exception e) {
-			System.out.println("Error enviado a " + urlStr);
-		}
+		new Thread(() -> {
+			try {
+				java.net.URL url = new java.net.URL(urlStr);
+				java.net.HttpURLConnection c = (java.net.HttpURLConnection) url.openConnection();
+				c.setConnectTimeout(3000);
+				c.setReadTimeout(3000);
+				c.setRequestMethod("GET");
+				c.getInputStream().close();
+				c.disconnect();
+			} catch (Exception e) {
+				System.out.println("Error enviado a " + urlStr);
+			}
+		}).start();
 	}
 		
 	

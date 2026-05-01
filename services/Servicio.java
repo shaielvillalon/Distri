@@ -29,7 +29,6 @@ import modelo.Proceso;
 public class Servicio {
 	
 	private static final String[] URLS = {
-			"http://192.168.1.204:8080/practicaObligatoria/rest/servicio/",
 			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/",
 			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/"
 		};
@@ -51,9 +50,9 @@ public class Servicio {
 			// Máquina 2 -> procesos 3 y 4
 			// Máquina 3 -> procesos 5 y 6
 			
-			int idLocal = indiceMaquina * 2 + 1; 
+			int idLocal = indiceMaquina * 3 + 1; 
 			
-			for (int i = idLocal; i < idLocal + 2; i++) {
+			for (int i = idLocal; i <= idLocal + 2; i++) {
 				procesos.add(new Proceso(i, TOTAL, indiceMaquina));
 			}
 			
@@ -63,7 +62,8 @@ public class Servicio {
 			
 			System.out.println("Máquina " + (indiceMaquina + 1)
 		            + " — procesos: " + procesos.get(0).getProcesoId()
-		            + " y " + procesos.get(1).getProcesoId());
+		            + " , " + procesos.get(1).getProcesoId()
+					+ " y " + procesos.get(2).getProcesoId());
 		}
 		
 		

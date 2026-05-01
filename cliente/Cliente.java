@@ -20,7 +20,6 @@ public class Cliente {
 	
 	// URL base del servicio REST
 	private static final String[] URLS = {
-			"http://192.168.1.204:8080/practicaObligatoria/rest/servicio/",
 			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/",
 			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/"
 	};
@@ -94,6 +93,8 @@ public class Cliente {
 		try {
 			URL url = new URL(urlStr);
 			HttpURLConnection conexion = (HttpURLConnection) url.openConnection();
+			conexion.setConnectTimeout(3000);
+			conexion.setReadTimeout(5000);
 			conexion.setRequestMethod("GET");
 			
 			BufferedReader lector = new BufferedReader(
