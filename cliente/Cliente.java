@@ -20,8 +20,8 @@ public class Cliente {
 	
 	// URL base del servicio REST
 	private static final String[] URLS = {
-			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/",
-			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/"
+			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/",
+			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/"
 	};
 
 	public static void main(String[] args) {
@@ -44,6 +44,8 @@ public class Cliente {
 				cambiarFallo(entrada);
 			} else if (entrada.matches("s\\d+")) {
 				cambiarValor(entrada);
+			} else if (entrada.equalsIgnoreCase("rt")) {
+				realizarPeticion("resetTotal");
 			} else {
 				System.out.println("Entrada no reconocida. Pulsa 'h' para ayuda");
 			}
@@ -58,6 +60,7 @@ public class Cliente {
 		System.out.println("fN	-> Cambiar estado de fallo del proceso N");
 		System.out.println("sX	-> Proponer cambio del valor a X");
 		System.out.println("r\t -> Reiniciar sistema");
+		System.out.println("ft\t -> Reiniciar sistema y fallos");
 	}
 	
 	// Cambia el estado de fallo de un proceso

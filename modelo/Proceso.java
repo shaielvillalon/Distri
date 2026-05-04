@@ -119,6 +119,13 @@ public class Proceso extends Thread {
 		return (totalProcesos / 2) + 1;
 	}
 	
+	private String obtenerURLDeProceso(int idProceso) {
+		int procesosXMaquina = totalProcesos / urls.length;
+		int indice = (idProceso - 1) / procesosXMaquina;
+		return urls[indice];
+	}
+		
+	
 	/*private int f() {
 		return (procesos.size() - 1) / 3;
 	}
@@ -157,16 +164,17 @@ public class Proceso extends Thread {
 		
 		if (urls == null) return;
 		
-		for (int i=0; i<urls.length; i++) {
+		for (int destino=1; destino <= totalProcesos; destino++) {
 			int valorEnviar;
 			
-			if (this.error && i!=indiceMiUrl) {
+			if (this.error && destino!=this.id) {
 				valorEnviar = random.nextInt(101); // valor aleatorio
 			} else {
 				valorEnviar = v;
 			}
 			
-			enviar(urls[i] + "compromiso?v=" + valorEnviar);
+			String urlDestino = obtenerURLDeProceso(destino);
+			enviar(urlDestino + "compromiso?id=" + destino + "&v=" + valorEnviar);
 		}
 	}
 	
@@ -185,8 +193,9 @@ public class Proceso extends Thread {
 			comisionEmitida = true;
 			
 			
-			for (String s : urls) {
-				enviar(s + "comision?v=" + valorConQuorum);
+			for (int destino=1; destino<=totalProcesos; destino++) {
+				String urlDestino = obtenerURLDeProceso(destino);
+				enviar(urlDestino + "comision?id=" + destino + "&v=" + valorConQuorum);
 			}
 			
 		}
@@ -236,6 +245,6 @@ public class Proceso extends Thread {
 			}
 		}).start();
 	}
-		
+	
 	
 }

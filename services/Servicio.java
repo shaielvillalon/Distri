@@ -29,8 +29,8 @@ import modelo.Proceso;
 public class Servicio {
 	
 	private static final String[] URLS = {
-			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/",
-			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/"
+			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/",
+			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/"
 		};
 		
 		// Lista estática de procesos del sistema
@@ -90,6 +90,18 @@ public class Servicio {
 			System.err.println("IP no reconocida, usando máquina 1 por defecto");
 			return 0;
 		}
+		
+		private String listaToString(List<Integer> lista) {
+			if (lista.isEmpty()) return "-";
+			
+			StringBuilder sb = new StringBuilder();
+			for (int i=0; i<lista.size(); i++) {
+				sb.append(lista.get(i));
+				if (i<lista.size()-1) sb.append(",");
+			}
+			return sb.toString();
+		}
+		
 	
 	@GET
 	@Path("hola")
@@ -103,20 +115,23 @@ public class Servicio {
 	@Path("estado")
 	@Produces(MediaType.TEXT_PLAIN)
 	public String estado() {
-		// Cadena que almacenará el estado de todos los procesos
-		String salida = "id\tvalor\terror\tcompromisos\t\tcomisiones\n";
+
+		StringBuilder salida = new StringBuilder();
 		
-		// Recorre todos los procesos y construye una línea con su información
+		//Cabecera
+		salida.append(String.format("%-4s %-5s %-20s %-6s\n", "id", "var", "compromisos", "error"));
+		
+		// Filas -> Recorre todos los procesos y construye una línea con su información
 		for (Proceso p : procesos) {
-			salida += p.getProcesoId() + "\t"
-					+ p.getVariable() + "\t"
-					+ p.isError() + "\t"
-					+ p.getCompromisos() + "\t\t"
-					+ p.getComisiones() + "\n";
+			salida.append(String.format("%-4s %-5s %-20s %-6s\n", 
+					p.getProcesoId(),
+					(p.getVariable() == -1 ? "-" : p.getVariable()),
+					listaToString(p.getCompromisos()),
+					p.isError()));
 		}
 		
 		// Devuelve el estado completo en texto plano
-		return salida;
+		return salida.toString();
 	}
 	
 	@GET
@@ -158,22 +173,28 @@ public class Servicio {
 	@GET
 	@Path("compromiso")
 	@Produces(MediaType.TEXT_PLAIN)
-	public String compromiso(@QueryParam("v") int v) {
+	public String compromiso(@QueryParam("id") int id, @QueryParam("v") int v) {
 		for (Proceso p : procesos) {
-			p.compromiso(v);
+			if (p.getProcesoId() == id) {
+				p.compromiso(v);
+				return "OK compromiso " + v + " para proceso " + id;
+			}
 		}
-		return "OK compromiso " + v;
+		return "No existe un proceso con id  " + id;
 	}
 	
 	
 	@GET
 	@Path("comision")
 	@Produces(MediaType.TEXT_PLAIN)
-	public String comision(@QueryParam("v") int v) {
+	public String comision(@QueryParam("id") int id, @QueryParam("v") int v) {
 		for (Proceso p : procesos) {
-			p.comision(v);
+			if (p.getProcesoId() == id) {
+				p.comision(v);
+				return "OK comision " + v + " para proceso " + id;
+			}
 		}
-		return "OK comision " + v;
+		return "No existe un proceso con id " + id;
 	}
 	
 	
@@ -199,10 +220,22 @@ public class Servicio {
 	public String reset() {
 		for (Proceso p: procesos) {
 			p.resetear(-1);
-			p.setError(false);
+			//p.setError(false);
 		}
 		
 		return "Sistema reiniciado";
+	}
+	
+	@GET
+	@Path("resetTotal")
+	@Produces(MediaType.TEXT_PLAIN)
+	public String resetTotal() {
+		for (Proceso p: procesos) {
+			p.resetear(-1);
+			p.setError(false);
+		}
+		
+		return "Sistema reiniciado completamente";
 	}
 	
 	
