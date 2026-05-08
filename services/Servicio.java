@@ -29,9 +29,9 @@ import modelo.Proceso;
 public class Servicio {
 	
 	private static final String[] URLS = {
-			"http://172.20.7.254:8080/practicaObligatoria/rest/servicio/",
-			"http://172.20.7.191:8080/practicaObligatoria/rest/servicio/",
-			"http://172.20.7.126:8080/practicaObligatoria/rest/servicio/"
+			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/",
+			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/",
+			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/"
 		};
 		
 		// Lista estática de procesos del sistema
@@ -44,6 +44,10 @@ public class Servicio {
 		
 		static List<Proceso> procesos = new ArrayList<>();
 		private static int indiceMaquina;
+		
+		static List<Integer> confirmaciones = new ArrayList<>();
+		private static boolean consensoNotificado = false;
+		private static int valorConsenso = -1;
 		
 		static {
 			indiceMaquina = detectarIndice();
@@ -200,6 +204,32 @@ public class Servicio {
 	
 	
 	@GET
+	@Path("confirmacion")
+	@Produces(MediaType.TEXT_PLAIN)
+	public synchronized String confirmacion(@QueryParam("v") int v) {
+		confirmaciones.add(v);
+		
+		int cont = 0;
+		for (Integer valor : confirmaciones) {
+			if (valor == v) {
+				cont ++;
+			}
+		}
+		
+		int quorum = (TOTAL / 2) + 1;
+		
+		if (cont >= quorum && !consensoNotificado) {
+			consensoNotificado = true;
+			valorConsenso = v;
+			return "Consenso confirmado para valor " + v;
+		}
+		
+		return "Ok confirmacion " + v;
+	}
+	
+	
+	
+	@GET
 	@Path("fallo")
 	@Produces(MediaType.TEXT_PLAIN)
 	public String fallo(@QueryParam("id") int id) {
@@ -223,6 +253,10 @@ public class Servicio {
 			//p.setError(false);
 		}
 		
+		confirmaciones.clear();
+		consensoNotificado = false;
+		valorConsenso = -1;
+		
 		return "Sistema reiniciado";
 	}
 	
@@ -235,7 +269,22 @@ public class Servicio {
 			p.setError(false);
 		}
 		
+		confirmaciones.clear();
+		consensoNotificado = false;
+		valorConsenso = -1;
+		
 		return "Sistema reiniciado completamente";
+	}
+	
+	
+	@GET
+	@Path("resultado")
+	@Produces(MediaType.TEXT_PLAIN)
+	public synchronized String resultado() {
+		if (consensoNotificado) {
+			return ("CONSENSO ALCANZADO -> valor " + valorConsenso);
+		}
+		return "Todavía no hay consenso confirmado";
 	}
 	
 	

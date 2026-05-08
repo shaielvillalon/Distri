@@ -227,6 +227,10 @@ public class Proceso extends Thread {
 	 */
 	public synchronized void confirmacion() {
 		System.out.println("Proceso " + id + " confirma valor " + variable);
+		
+		for (String url : urls) {
+			enviar(url + "confirmacion?v=" + variable);
+		}
 	}
 
 	
