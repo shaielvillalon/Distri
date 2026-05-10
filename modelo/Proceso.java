@@ -5,13 +5,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /* Clase que representa un proceso o nodo participante en el consenso PBFT
  * Cada proceso mantiene su id, el valor decidido, si actúa con 
  * fallo bizantino y la información recibida en las fases de compromiso y comisión
  * 
- * Esta versión implementa la lógica local del algoritmo, sin comunicación REST real
- * entre máquinas todavía. La lista "procesos" simula la red de nodos
+ * Esta versión implementa la lógica distribuida mediante servicios REST
+ * Cada proceso se ejecuta como un hilo y procesa mensajes desde una cola interna
  * */
 
 public class Proceso extends Thread {
@@ -36,6 +38,23 @@ public class Proceso extends Thread {
 	private int indiceMiUrl; //Índica de la URL de esta máquina en el array 'urls'
 	private int totalProcesos; //Nº total de procesos del sistema
 	
+	
+	private BlockingQueue<Mensaje> colaMensajes;
+	private boolean activo;
+	
+	
+	// Clase interna para representar mensajes
+	private static class Mensaje {
+		String tipo;
+		int valor;
+		 
+		Mensaje(String tipo, int valor) {
+			this.tipo = tipo;
+			this.valor = valor;
+		}
+	}
+	
+	
 	/* Constructor del proceso
 	 * Inicializa el id, deja la variable sin decidir y crea
 	 * las estructuras internas necesarias para la ejecución del consenso
@@ -44,15 +63,22 @@ public class Proceso extends Thread {
 		this.id = id;
 		this.totalProcesos = totalProcesos;
 		this.indiceMiUrl = indiceMiUrl;
+		
 		this.variable = -1;
 		this.error = false;
+		
 		this.compromisos = new ArrayList<>();
 		this.comisiones = new ArrayList<>();
 		//this.procesos = new ArrayList<>();
+		
 		this.comisionEmitida = false;
 		this.confirmacionEmitida = false;
+		
 		this.random = new Random();
 		//this.valorPropuesto = -1;
+	
+		this.colaMensajes = new LinkedBlockingQueue<>();
+		this.activo = true;
 	}
 	
 	public int getProcesoId() { // Devuelve el id del proceso
@@ -93,10 +119,48 @@ public class Proceso extends Thread {
 	}*/
 	
 	
+	//Métodos para recibir mensajes
+	public void recibirPropuesta(int v) {
+		colaMensajes.offer(new Mensaje("PROPUESTA", v));
+	}
+	
+	public void recibirCompromiso(int v) {
+		colaMensajes.offer(new Mensaje("COMPROMISO", v));
+	}
+	
+	public void recibirComision(int v) {
+		colaMensajes.offer(new Mensaje("COMISION", v));
+	}
+	
 	@Override
 	public void run() {
-		// No se implementa comportamiento activo del hilo en esta fase
-		// La lógica del consenso se activa mediante lamadas a métodos
+		
+		while (activo) {
+			try {
+				Mensaje mensaje = colaMensajes.take();
+				
+				switch(mensaje.tipo) {
+					
+					case "PROPUESTA":
+						propuesta(mensaje.valor);
+						break;
+				
+					case "COMPROMISO":
+						compromiso(mensaje.valor);
+						break;
+						
+					case "COMISION":
+						comision(mensaje.valor);
+						break;
+				}
+			
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				activo = false;
+			}
+			
+		}
+		
 	}
 	
 	/* Reinicia el estado del proceso para comenzar una nueva ronda de consenso.
@@ -104,8 +168,10 @@ public class Proceso extends Thread {
 	 */
 	public synchronized void resetear(int v) {
 		this.variable = -1;
+		
 		this.compromisos.clear();
 		this.comisiones.clear();
+		
 		this.comisionEmitida = false;
 		this.confirmacionEmitida = false;
 		//this.valorPropuesto = v;
@@ -125,14 +191,6 @@ public class Proceso extends Thread {
 		return urls[indice];
 	}
 		
-	
-	/*private int f() {
-		return (procesos.size() - 1) / 3;
-	}
-	
-	private int quorumPBFT() {
-		return 2 * f() + 1;
-	}*/
 	
 	
 	/* Devuelve el valor que ha alcanzado quórum dentro de una lista de valores
@@ -161,6 +219,12 @@ public class Proceso extends Thread {
 	 * demás nodos. A sí mismo se puede mandar el valor correcto.
 	 */
 	public synchronized void propuesta(int v) {
+		
+		this.variable = -1;
+		this.compromisos.clear();
+		this.comisiones.clear();
+		this.comisionEmitida = false;
+		this.confirmacionEmitida = false;
 		
 		if (urls == null) return;
 		
