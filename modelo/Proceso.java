@@ -8,32 +8,21 @@ import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-/* Clase que representa un proceso o nodo participante en el consenso PBFT
- * Cada proceso mantiene su id, el valor decidido, si actúa con 
- * fallo bizantino y la información recibida en las fases de compromiso y comisión
- * 
- * Esta versión implementa la lógica distribuida mediante servicios REST
- * Cada proceso se ejecuta como un hilo y procesa mensajes desde una cola interna
- * */
 
 public class Proceso extends Thread {
 
 	private int id; // Identificador único del proceso dentro del sistema
-	private int variable; // Valor sobre el que se aplica el consenso; -1 indica "no decidido"
+	private int variable; // Valor sobre el que se aplica el consenso
 	private boolean error; // Indica si el proceso está actuando con comportamiento bizantino
 	
 	private List<Integer> compromisos; // Valores recibidos en la fase de compromiso
 	private List<Integer> comisiones; // Valores recibidos en la fase de comisión
-	
-	//private List<Proceso> procesos; // Lista de procesos del sistema; se usa para simular la red localmente
-	
+		
 	private boolean comisionEmitida; // Evita emitir varias veces la comisión cuando ya se alcanzó mayoría
 	private boolean confirmacionEmitida; //Evita confirmar varias veces cuando ya se alcanzó mayoría en comisiones
 	
 	private Random random; //Generador aleatorio para simular fallos bizantinos
-	
-	//private int valorPropuesto; //Valor propuesto en la ronda actual
-	
+		
 	private String[] urls; //URLs de los servicios REST de las máquinas
 	private int indiceMiUrl; //Índica de la URL de esta máquina en el array 'urls'
 	private int totalProcesos; //Nº total de procesos del sistema
@@ -69,13 +58,11 @@ public class Proceso extends Thread {
 		
 		this.compromisos = new ArrayList<>();
 		this.comisiones = new ArrayList<>();
-		//this.procesos = new ArrayList<>();
 		
 		this.comisionEmitida = false;
 		this.confirmacionEmitida = false;
 		
 		this.random = new Random();
-		//this.valorPropuesto = -1;
 	
 		this.colaMensajes = new LinkedBlockingQueue<>();
 		this.activo = true;
@@ -89,10 +76,6 @@ public class Proceso extends Thread {
 	public int getVariable() { //Devuelve el valor actual almacenado por el proceso
 		return variable;
 	}
-	
-	/*public void setVariable(int v) { // Modifica el valor actual del proceso
-		this.variable = v;
-	}*/
 	
 	public boolean isError() { // Indica si el proceso está en modo fallo bizantino
 		return error;
@@ -110,28 +93,30 @@ public class Proceso extends Thread {
 		return new ArrayList<>(comisiones);
 	}
 	
-	public void setServicios(String[] urls) {
+	public void setServicios(String[] urls) { //Asigna las URLs de los REST
 		this.urls = urls;
 	}
 	
-	/*public void setProcesos(List<Proceso> procesos) { //Asigna la red de procesos con la que este nodo interactúa
-		this.procesos = procesos;
-	}*/
-	
-	
-	//Métodos para recibir mensajes
+	// Inserta una propuesta en la cola de mensajes del proceso
 	public void recibirPropuesta(int v) {
 		colaMensajes.offer(new Mensaje("PROPUESTA", v));
 	}
 	
+	//Inserta un compromiso recibido en la cola del proceso
 	public void recibirCompromiso(int v) {
 		colaMensajes.offer(new Mensaje("COMPROMISO", v));
 	}
 	
+	//Inserta un comision recibido en la cola del proceso
 	public void recibirComision(int v) {
 		colaMensajes.offer(new Mensaje("COMISION", v));
 	}
 	
+	/*
+	 * Bucle principal del hilo.
+	 * El proceso espera mensajes en su cola interna y ejecuta la fase
+	 * correspondiente según el tipo de mensaje recibido.
+	 */
 	@Override
 	public void run() {
 		
@@ -174,7 +159,6 @@ public class Proceso extends Thread {
 		
 		this.comisionEmitida = false;
 		this.confirmacionEmitida = false;
-		//this.valorPropuesto = v;
 	}
 	
 	
@@ -185,6 +169,7 @@ public class Proceso extends Thread {
 		return (totalProcesos / 2) + 1;
 	}
 	
+	//Determina qué URL corresponde al proceso indicado.
 	private String obtenerURLDeProceso(int idProceso) {
 		int procesosXMaquina = totalProcesos / urls.length;
 		int indice = (idProceso - 1) / procesosXMaquina;
@@ -286,11 +271,12 @@ public class Proceso extends Thread {
 	
 	/*
 	 * Fase 2b: confirmación.
-	 * En esta versión local simplemente se muestra por consola que el proceso
-	 * ha decidido un valor. Más adelante esto se conectará con el cliente.
+	 * Cuando el proceso decide un valor, envía una confirmación
+	 * a los servicios REST. El cliente consultará posteriormente
+	 * el resultado confirmado por quórum.
 	 */
 	public synchronized void confirmacion() {
-		System.out.println("Proceso " + id + " confirma valor " + variable);
+		//System.out.println("Proceso " + id + " confirma valor " + variable);
 		
 		for (String url : urls) {
 			enviar(url + "confirmacion?v=" + variable);

@@ -20,26 +20,18 @@ import modelo.Proceso;
 
 @Path("servicio")
 
-/* Servicio REST del sistema PBFT
- * Expone operaciones accesibles por HTTP para interactuar con los procesos:
- * comprobar si el servidor funciona, consultar el estado, proponer un valor
- * y activar o desactivar fallos bizantinos
- */
 
 public class Servicio {
 	
 	private static final String[] URLS = {
 			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/",
-			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/"
+			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/",
+			"http://192.168.1.200:8080/practicaObligatoria/rest/servicio/"
 		};
 		
 		// Lista estática de procesos del sistema
 		private static final int TOTAL = 6;
 		
-		//private static final int ID_MAQUINA = Integer.parseInt(
-		//		System.getProperty("idMaquina", "1")); // idMaquina = 1, 2 o 3
-		
-		//private static final int INDICE_MAQUINA = ID_MAQUINA -1;
 		
 		static List<Proceso> procesos = new ArrayList<>();
 		private static int indiceMaquina;
@@ -54,25 +46,19 @@ public class Servicio {
 			// Máquina 2 -> procesos 3 y 4
 			// Máquina 3 -> procesos 5 y 6
 			
-			int idLocal = indiceMaquina * 3 + 1; 
+			int idLocal = indiceMaquina * 2 + 1; 
 			
-			for (int i = idLocal; i <= idLocal + 2; i++) {
+			for (int i = idLocal; i <= idLocal + 1; i++) {
 				Proceso p = new Proceso(i, TOTAL, indiceMaquina);
 				p.setServicios(URLS);
 				procesos.add(p);
 				p.start();
 			}
-			
-			
-			System.out.println("Máquina " + (indiceMaquina + 1)
-		            + " — procesos: " + procesos.get(0).getProcesoId()
-		            + " , " + procesos.get(1).getProcesoId()
-		            + " , " + procesos.get(2).getProcesoId());
 		}
 		
 		
-		/* Recorre las interfaces de red buscando la IP que coincida con alguna de las URLs conocidas
-		 * Devuelve el índice de esa URL en el array. Si no, devuelve 0 como fallback */
+		/* Detecta el índice de la máquina comparando sus direcciones IP con las URLs configuradas 
+		 * Si no encuentra coincidencia, usa la primera máquina como valor por defecto */
 		private static int detectarIndice() {
 			try {
 				Enumeration<NetworkInterface> interfaces =
@@ -95,6 +81,7 @@ public class Servicio {
 			return 0;
 		}
 		
+		// Convierte una lista de enteros en una cadena separada por comas.
 		private String listaToString(List<Integer> lista) {
 			if (lista.isEmpty()) return "-";
 			
@@ -106,7 +93,7 @@ public class Servicio {
 			return sb.toString();
 		}
 		
-	
+	//Endpoint de prueba
 	@GET
 	@Path("hola")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -115,23 +102,20 @@ public class Servicio {
 		return "Servidor funcionando -> maquina " + (indiceMaquina + 1);
 	}
 	
+	// Devuelve el estado de todos los procesos locales.
 	@GET
 	@Path("estado")
 	@Produces(MediaType.TEXT_PLAIN)
 	public String estado() {
 
 		StringBuilder salida = new StringBuilder();
-		
-		//Cabecera
-		salida.append(String.format("%-4s %-5s %-20s %-20s %-6s\n", "id", "var", "compromisos", "comisiones", "error"));
-		
+				
 		// Filas -> Recorre todos los procesos y construye una línea con su información
 		for (Proceso p : procesos) {
-			salida.append(String.format("%-4s %-5s %-20s %-20s %-6s\n", 
+			salida.append(String.format("%-4s %-5s %-20s %-6s\n", 
 					p.getProcesoId(),
 					(p.getVariable() == -1 ? "-" : p.getVariable()),
 					listaToString(p.getCompromisos()),
-					listaToString(p.getComisiones()),
 					p.isError()));
 		}
 		
@@ -139,6 +123,11 @@ public class Servicio {
 		return salida.toString();
 	}
 	
+	/*
+	 * Recibe una propuesta de valor enviada por el cliente.
+	 * La propuesta se reenvía a todos los procesos locales para que inicien
+	 * una nueva ronda de consenso.
+	 * */
 	@GET
 	@Path("propuesta")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -153,7 +142,10 @@ public class Servicio {
 		return "Propuesta enviada: " + v;
 	}
 	
-	
+	/*
+	 * Recibe un compromiso destinado a un proceso concreto.
+	 * Busca el proceso local con el id indicado y le entrega el valor recibido.
+	 */
 	@GET
 	@Path("compromiso")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -167,7 +159,10 @@ public class Servicio {
 		return "No existe un proceso con id  " + id;
 	}
 	
-	
+	/*
+	 * Recibe una comisión destinada a un proceso concreto.
+	 * Busca el proceso local con el id indicado y le entrega el valor recibido.
+	 */
 	@GET
 	@Path("comision")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -182,7 +177,11 @@ public class Servicio {
 	}
 	
 	
-	
+	/*
+	 * Registra una confirmación de un valor decidido por un proceso.
+	 * Cuando un mismo valor alcanza quórum de confirmaciones, se marca como
+	 * consenso global confirmado.
+	 */
 	@GET
 	@Path("confirmacion")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -208,7 +207,10 @@ public class Servicio {
 	}
 	
 	
-	
+	/*
+	 * Activa o desactiva el fallo bizantino de un proceso concreto.
+	 * Si el proceso existe en esta máquina, invierte su estado de error.
+	 */
 	@GET
 	@Path("fallo")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -224,6 +226,10 @@ public class Servicio {
 		return "No existe un proceso con id " + id;
 	}
 	
+	/*
+	 * Reinicia la ronda de consenso sin modificar los fallos bizantinos activos.
+	 * Limpia el estado temporal de los procesos y las confirmaciones globales.
+	 */
 	@GET
 	@Path("reset")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -240,6 +246,10 @@ public class Servicio {
 		return "Sistema reiniciado";
 	}
 	
+	/*
+	 * Reinicia completamente el sistema.
+	 * Además de limpiar la ronda actual, desactiva todos los fallos bizantinos.
+	 */
 	@GET
 	@Path("resetTotal")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -256,7 +266,10 @@ public class Servicio {
 		return "Sistema reiniciado completamente";
 	}
 	
-	
+	/*
+	 * Devuelve el resultado global del consenso.
+	 * Si ya se alcanzó quórum de confirmaciones, informa del valor decidido.
+	 */
 	@GET
 	@Path("resultado")
 	@Produces(MediaType.TEXT_PLAIN)
