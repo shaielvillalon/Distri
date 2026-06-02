@@ -1,4 +1,4 @@
-package cliente;
+    package cliente;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -8,11 +8,9 @@ import java.util.Scanner;
 
 public class Cliente {
 	
-	// URL base del servicio REST
 	private static final String[] URLS = {
 			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/",
-			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/",
-			"http://192.168.1.200:8080/practicaObligatoria/rest/servicio/"
+			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/"
 	};
 
 	public static void main(String[] args) {
@@ -54,11 +52,10 @@ public class Cliente {
 		System.out.println("ft\t -> Reiniciar sistema y fallos");
 	}
 	
-	//Consulta el estado de todos los procesos del sistema
 	private static void consultarEstado() {
 		
-		System.out.printf("%-4s %-5s %-20s %-6s\n", 
-				"id", "var", "compromisos", "error");
+		System.out.printf("%-4s %-5s %-20s %-20s %-6s\n", 
+				"id", "var", "compromisos", "comisiones", "error");
 		
 		for (String s : URLS) {
 			String respuesta = obtenerRespuesta(s + "estado");
@@ -70,7 +67,6 @@ public class Cliente {
 		
 	}
 	
-	// Cambia el estado de fallo bizantino de un proceso concreto
 	private static void cambiarFallo(String entrada) {
 		try {
 			int id = Integer.parseInt(entrada.substring(1));
@@ -89,7 +85,6 @@ public class Cliente {
 		}
 	}
 	
-	//Procesa una propuesta de cambio de valor introducida por el usuario
 	private static void cambiarValor(String entrada) {
 		try {
 			int valor = Integer.parseInt(entrada.substring(1));
@@ -111,35 +106,36 @@ public class Cliente {
 		}
 	}
 	
-	//Envía una propuesta de valor a los servicios REST
+
 	private static void realizarPropuesta(int valor) {
-		boolean propuesta = false;
 		
 		for (String s : URLS) {
-			String respuesta = obtenerRespuesta(s + "propuesta?v=" + valor);
-			
-			if (!propuesta && !respuesta.isEmpty()) {
-				System.out.println(respuesta);
-				propuesta = true;
-			}
+			obtenerRespuesta(s + "propuesta?v=" + valor);
 		}
+		
+		for (String s : URLS) {
+			obtenerRespuesta(s + "emitirCompromisos");
+		}
+		
+		System.out.println("Propuesta enviada: " + valor);
+		
 	}
 	
-	//Realiza una petición GET a todas las máquinas y muestra la respuesta 
+
 	private static void realizarPeticion(String ruta) {
 		for (String s : URLS) {
 			realizarPeticionCompleta(s + ruta);
 		}
 	}
 	
-	//Realiza una petición GET a todas las máquinas y no muestra la respuesta 
+
 	private static void realizarPeticionSinTexto(String ruta) {
 		for (String s : URLS) {
 			obtenerRespuesta(s + ruta);
 		}
 	}
 	
-	//Ejecuta HTTP GET y escribe todas las líneas recibidas como respuesta del servidor
+
 	private static void realizarPeticionCompleta(String urlStr) {
 		try {
 			URL url = new URL(urlStr);
@@ -163,7 +159,7 @@ public class Cliente {
 		}
 	}
 	
-	////Ejecuta HTTP GET y devuelve la respuesta como String
+
 	private static String obtenerRespuesta(String urlStr) {
 		
 		StringBuilder respuesta = new StringBuilder();
@@ -191,7 +187,7 @@ public class Cliente {
 		return respuesta.toString();
 	}
 	
-	//Consulta si algún servicio REST ha confirmado consenso y muestra o no consenso
+
 	private static void consultarResultado() {
 		
 		boolean consenso = false;
@@ -211,3 +207,5 @@ public class Cliente {
 	}
 	
 }
+
+    

@@ -1,4 +1,4 @@
-package services;
+    package services;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -14,6 +14,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 import modelo.Proceso;
@@ -25,8 +26,7 @@ public class Servicio {
 	
 	private static final String[] URLS = {
 			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/",
-			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/",
-			"http://192.168.1.200:8080/practicaObligatoria/rest/servicio/"
+			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/"
 		};
 		
 		// Lista estática de procesos del sistema
@@ -36,9 +36,9 @@ public class Servicio {
 		static List<Proceso> procesos = new ArrayList<>();
 		private static int indiceMaquina;
 		
-		static List<Integer> confirmaciones = new ArrayList<>();
-		private static boolean consensoNotificado = false;
-		private static int valorConsenso = -1;
+		private static final List<Integer> confirmaciones = new CopyOnWriteArrayList<>();
+		private static volatile boolean consensoNotificado = false;
+		private static volatile int valorConsenso = -1;
 		
 		static {
 			indiceMaquina = detectarIndice();
@@ -46,9 +46,9 @@ public class Servicio {
 			// Máquina 2 -> procesos 3 y 4
 			// Máquina 3 -> procesos 5 y 6
 			
-			int idLocal = indiceMaquina * 2 + 1; 
+			int idLocal = indiceMaquina * 3 + 1; 
 			
-			for (int i = idLocal; i <= idLocal + 1; i++) {
+			for (int i = idLocal; i <= idLocal + 2; i++) {
 				Proceso p = new Proceso(i, TOTAL, indiceMaquina);
 				p.setServicios(URLS);
 				procesos.add(p);
@@ -81,7 +81,7 @@ public class Servicio {
 			return 0;
 		}
 		
-		// Convierte una lista de enteros en una cadena separada por comas.
+		
 		private String listaToString(List<Integer> lista) {
 			if (lista.isEmpty()) return "-";
 			
@@ -98,11 +98,9 @@ public class Servicio {
 	@Path("hola")
 	@Produces(MediaType.TEXT_PLAIN)
 	public String hola() {
-		// Método de prueba para verificar que el servicio REST está levantado
 		return "Servidor funcionando -> maquina " + (indiceMaquina + 1);
 	}
 	
-	// Devuelve el estado de todos los procesos locales.
 	@GET
 	@Path("estado")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -110,42 +108,45 @@ public class Servicio {
 
 		StringBuilder salida = new StringBuilder();
 				
-		// Filas -> Recorre todos los procesos y construye una línea con su información
 		for (Proceso p : procesos) {
-			salida.append(String.format("%-4s %-5s %-20s %-6s\n", 
+			salida.append(String.format("%-4s %-5s %-20s %-20s %-6s\n", 
 					p.getProcesoId(),
 					(p.getVariable() == -1 ? "-" : p.getVariable()),
 					listaToString(p.getCompromisos()),
+					listaToString(p.getComisiones()),
 					p.isError()));
 		}
 		
-		// Devuelve el estado completo en texto plano
 		return salida.toString();
 	}
 	
-	/*
-	 * Recibe una propuesta de valor enviada por el cliente.
-	 * La propuesta se reenvía a todos los procesos locales para que inicien
-	 * una nueva ronda de consenso.
-	 * */
+
 	@GET
 	@Path("propuesta")
 	@Produces(MediaType.TEXT_PLAIN)
 	public String propuesta(@QueryParam("v") int v) {
 		
-		//El cliente propone el valor a todos los procesos
 		for (Proceso p : procesos) {
 			p.recibirPropuesta(v);
 		}
-		
-		
 		return "Propuesta enviada: " + v;
 	}
 	
-	/*
-	 * Recibe un compromiso destinado a un proceso concreto.
-	 * Busca el proceso local con el id indicado y le entrega el valor recibido.
-	 */
+	
+	@GET
+	@Path("emitirCompromisos")
+	@Produces(MediaType.TEXT_PLAIN)
+	public String emitirCompromisos() {
+		
+		for (Proceso p : procesos) {
+			p.emitirCompromisos();
+		}
+		
+		return "Compromisos emitidos";
+	}
+	
+
+
 	@GET
 	@Path("compromiso")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -159,10 +160,8 @@ public class Servicio {
 		return "No existe un proceso con id  " + id;
 	}
 	
-	/*
-	 * Recibe una comisión destinada a un proceso concreto.
-	 * Busca el proceso local con el id indicado y le entrega el valor recibido.
-	 */
+
+
 	@GET
 	@Path("comision")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -177,40 +176,34 @@ public class Servicio {
 	}
 	
 	
-	/*
-	 * Registra una confirmación de un valor decidido por un proceso.
-	 * Cuando un mismo valor alcanza quórum de confirmaciones, se marca como
-	 * consenso global confirmado.
-	 */
+
 	@GET
 	@Path("confirmacion")
 	@Produces(MediaType.TEXT_PLAIN)
 	public synchronized String confirmacion(@QueryParam("v") int v) {
-		confirmaciones.add(v);
+		synchronized (Servicio.class) {
+			confirmaciones.add(v);
 		
-		int cont = 0;
-		for (Integer valor : confirmaciones) {
-			if (valor == v) {
-				cont ++;
+			int cont = 0;
+			for (Integer valor : confirmaciones) {
+				if (valor == v) {
+					cont ++;
+				}
 			}
+		
+			int quorum = (TOTAL / 2) + 1;
+		
+			if (cont >= quorum && !consensoNotificado) {
+				consensoNotificado = true;
+				valorConsenso = v;
+				return "Consenso confirmado para valor " + v;
+			}
+		
+			return "Ok confirmacion " + v;
 		}
-		
-		int quorum = (TOTAL / 2) + 1;
-		
-		if (cont >= quorum && !consensoNotificado) {
-			consensoNotificado = true;
-			valorConsenso = v;
-			return "Consenso confirmado para valor " + v;
-		}
-		
-		return "Ok confirmacion " + v;
 	}
 	
-	
-	/*
-	 * Activa o desactiva el fallo bizantino de un proceso concreto.
-	 * Si el proceso existe en esta máquina, invierte su estado de error.
-	 */
+
 	@GET
 	@Path("fallo")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -226,10 +219,7 @@ public class Servicio {
 		return "No existe un proceso con id " + id;
 	}
 	
-	/*
-	 * Reinicia la ronda de consenso sin modificar los fallos bizantinos activos.
-	 * Limpia el estado temporal de los procesos y las confirmaciones globales.
-	 */
+
 	@GET
 	@Path("reset")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -246,10 +236,7 @@ public class Servicio {
 		return "Sistema reiniciado";
 	}
 	
-	/*
-	 * Reinicia completamente el sistema.
-	 * Además de limpiar la ronda actual, desactiva todos los fallos bizantinos.
-	 */
+
 	@GET
 	@Path("resetTotal")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -266,10 +253,7 @@ public class Servicio {
 		return "Sistema reiniciado completamente";
 	}
 	
-	/*
-	 * Devuelve el resultado global del consenso.
-	 * Si ya se alcanzó quórum de confirmaciones, informa del valor decidido.
-	 */
+
 	@GET
 	@Path("resultado")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -282,3 +266,5 @@ public class Servicio {
 	
 	
 }
+
+    

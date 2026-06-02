@@ -1,4 +1,4 @@
-package modelo;
+    package modelo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,28 +11,28 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class Proceso extends Thread {
 
-	private int id; // Identificador único del proceso dentro del sistema
-	private int variable; // Valor sobre el que se aplica el consenso
-	private boolean error; // Indica si el proceso está actuando con comportamiento bizantino
-	
-	private List<Integer> compromisos; // Valores recibidos en la fase de compromiso
-	private List<Integer> comisiones; // Valores recibidos en la fase de comisión
+	private int id;
+	private int variable;
+	private boolean error;
+
+	private List<Integer> compromisos;
+	private List<Integer> comisiones;
 		
-	private boolean comisionEmitida; // Evita emitir varias veces la comisión cuando ya se alcanzó mayoría
-	private boolean confirmacionEmitida; //Evita confirmar varias veces cuando ya se alcanzó mayoría en comisiones
+	private boolean comisionEmitida;
+	private boolean confirmacionEmitida;
 	
-	private Random random; //Generador aleatorio para simular fallos bizantinos
-		
-	private String[] urls; //URLs de los servicios REST de las máquinas
-	private int indiceMiUrl; //Índica de la URL de esta máquina en el array 'urls'
-	private int totalProcesos; //Nº total de procesos del sistema
+	private Random random;
+	private String[] urls;
+	private int indiceMiUrl;
+	private int totalProcesos;
+	
+	private int valorPropuesto = -1;
 	
 	
 	private BlockingQueue<Mensaje> colaMensajes;
 	private boolean activo;
 	
 	
-	// Clase interna para representar mensajes
 	private static class Mensaje {
 		String tipo;
 		int valor;
@@ -44,10 +44,7 @@ public class Proceso extends Thread {
 	}
 	
 	
-	/* Constructor del proceso
-	 * Inicializa el id, deja la variable sin decidir y crea
-	 * las estructuras internas necesarias para la ejecución del consenso
-	 */
+
 	public Proceso(int id, int totalProcesos, int indiceMiUrl) {
 		this.id = id;
 		this.totalProcesos = totalProcesos;
@@ -68,55 +65,50 @@ public class Proceso extends Thread {
 		this.activo = true;
 	}
 	
-	public int getProcesoId() { // Devuelve el id del proceso
+	public int getProcesoId() {
 		return id;
 	}
 	
 
-	public int getVariable() { //Devuelve el valor actual almacenado por el proceso
+	public int getVariable() {
 		return variable;
 	}
 	
-	public boolean isError() { // Indica si el proceso está en modo fallo bizantino
+	public boolean isError() {
 		return error;
 	}
 	
-	public void setError (boolean error) { // Cambia el estado de fallo del proceso
+	public void setError (boolean error) {
 		this.error = error;
 	}
 	
-	public List<Integer> getCompromisos() { // Devuelve una copia de la lista de compromisos recibidos
+	public List<Integer> getCompromisos() {
 		return new ArrayList<>(compromisos);
 	}
 	
-	public List<Integer> getComisiones() { // Devuelve una copia de la lista de comisiones recibidas
+	public List<Integer> getComisiones() {
 		return new ArrayList<>(comisiones);
 	}
 	
-	public void setServicios(String[] urls) { //Asigna las URLs de los REST
+	public void setServicios(String[] urls) {
 		this.urls = urls;
 	}
 	
-	// Inserta una propuesta en la cola de mensajes del proceso
+
 	public void recibirPropuesta(int v) {
 		colaMensajes.offer(new Mensaje("PROPUESTA", v));
 	}
 	
-	//Inserta un compromiso recibido en la cola del proceso
 	public void recibirCompromiso(int v) {
 		colaMensajes.offer(new Mensaje("COMPROMISO", v));
 	}
 	
-	//Inserta un comision recibido en la cola del proceso
 	public void recibirComision(int v) {
 		colaMensajes.offer(new Mensaje("COMISION", v));
 	}
 	
-	/*
-	 * Bucle principal del hilo.
-	 * El proceso espera mensajes en su cola interna y ejecuta la fase
-	 * correspondiente según el tipo de mensaje recibido.
-	 */
+	
+	
 	@Override
 	public void run() {
 		
@@ -148,9 +140,8 @@ public class Proceso extends Thread {
 		
 	}
 	
-	/* Reinicia el estado del proceso para comenzar una nueva ronda de consenso.
-	 * Se limpia la información temporal y se guarda el nuevo valor propuesto
-	 */
+
+
 	public synchronized void resetear(int v) {
 		this.variable = -1;
 		
@@ -162,14 +153,13 @@ public class Proceso extends Thread {
 	}
 	
 	
-	/* Calcula el quórum necesario para alcanzar la mayoría simple
-	 * P.ej. con 6 procesos el quórum será 4
-	 */
+
+
 	private int quorum() {
 		return (totalProcesos / 2) + 1;
 	}
 	
-	//Determina qué URL corresponde al proceso indicado.
+
 	private String obtenerURLDeProceso(int idProceso) {
 		int procesosXMaquina = totalProcesos / urls.length;
 		int indice = (idProceso - 1) / procesosXMaquina;
@@ -177,10 +167,7 @@ public class Proceso extends Thread {
 	}
 		
 	
-	
-	/* Devuelve el valor que ha alcanzado quórum dentro de una lista de valores
-	 * Si ningún valor llega a mayoría, devuelve null
-	 */
+
 	private Integer valorMayoritario(List<Integer> valores) {
 		Map<Integer, Integer> contador = new HashMap<>();
 		
@@ -195,14 +182,7 @@ public class Proceso extends Thread {
 		return null;
 	}
 	
-	
-	/* Fase 1a: propuesta.
-	 * El cliente propone un valor y este proceso lo multidifunde al resto
-	 * mediante mensajes de compromiso.
-	 * 
-	 * Si el proceso está en fallo bizantino, envía valores aleatorios a los
-	 * demás nodos. A sí mismo se puede mandar el valor correcto.
-	 */
+
 	public synchronized void propuesta(int v) {
 		
 		this.variable = -1;
@@ -210,31 +190,37 @@ public class Proceso extends Thread {
 		this.comisiones.clear();
 		this.comisionEmitida = false;
 		this.confirmacionEmitida = false;
-		
-		if (urls == null) return;
-		
-		for (int destino=1; destino <= totalProcesos; destino++) {
-			int valorEnviar;
-			
-			if (this.error && destino!=this.id) {
-				valorEnviar = random.nextInt(101); // valor aleatorio
-			} else {
-				valorEnviar = v;
-			}
-			
-			String urlDestino = obtenerURLDeProceso(destino);
-			enviar(urlDestino + "compromiso?id=" + destino + "&v=" + valorEnviar);
-		}
+		this.valorPropuesto = v;
+	
 	}
 	
 	
-	/*
-	 * Fase 1b: compromiso.
-	 * El proceso recibe un valor comprometido. Si algún valor alcanza quórum,
-	 * emite una comisión a todos los nodos.
-	 */
+	public synchronized void emitirCompromisos() {
+		
+		if (urls == null || valorPropuesto == -1) return;
+		
+			for (int destino=1; destino <= totalProcesos; destino++) {
+				int valorEnviar;
+			
+				if (this.error && destino!=this.id) {
+					valorEnviar = random.nextInt(101); // valor aleatorio
+				} else {
+					valorEnviar = valorPropuesto;
+				}
+			
+				String urlDestino = obtenerURLDeProceso(destino);
+				enviar(urlDestino + "compromiso?id=" + destino + "&v=" + valorEnviar);
+			}
+	}
+	
+	
+
 	public synchronized void compromiso(int v) {
 		compromisos.add(v);
+		
+		if (compromisos.size() < totalProcesos) {
+			return;
+		}
 		
 		Integer valorConQuorum = valorMayoritario(compromisos);
 		
@@ -251,13 +237,13 @@ public class Proceso extends Thread {
 	}
 	
 	
-	/*
-	 * Fase 2a: comisión.
-	 * El proceso recibe una comisión. Si algún valor alcanza quórum en esta fase,
-	 * el proceso decide dicho valor y emite confirmación.
-	 */
+
 	public synchronized void comision (int v) {
 		comisiones.add(v);
+		
+		if (comisiones.size() < totalProcesos) {
+			return;
+		}
 		
 		Integer valorConQuorum = valorMayoritario(comisiones);
 		
@@ -269,12 +255,7 @@ public class Proceso extends Thread {
 	}
 	
 	
-	/*
-	 * Fase 2b: confirmación.
-	 * Cuando el proceso decide un valor, envía una confirmación
-	 * a los servicios REST. El cliente consultará posteriormente
-	 * el resultado confirmado por quórum.
-	 */
+
 	public synchronized void confirmacion() {
 		//System.out.println("Proceso " + id + " confirma valor " + variable);
 		
@@ -296,9 +277,12 @@ public class Proceso extends Thread {
 				c.disconnect();
 			} catch (Exception e) {
 				System.out.println("Error enviado a " + urlStr);
+				System.out.println("Causa: " + e.getClass().getName() + " - " + e.getMessage());
 			}
 		}).start();
 	}
 	
 	
 }
+
+    
