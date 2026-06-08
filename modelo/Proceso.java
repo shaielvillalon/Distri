@@ -1,4 +1,4 @@
-    package modelo;
+package modelo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -233,6 +233,12 @@ public class Proceso extends Thread {
 				enviar(urlDestino + "comision?id=" + destino + "&v=" + valorConQuorum);
 			}
 			
+		} else if (!comisionEmitida) {
+			comisionEmitida = true;
+			
+			for (String url : urls) {
+				enviar(url + "sinConsenso?id=" + id);
+			}
 		}
 	}
 	
@@ -241,9 +247,6 @@ public class Proceso extends Thread {
 	public synchronized void comision (int v) {
 		comisiones.add(v);
 		
-		if (comisiones.size() < totalProcesos) {
-			return;
-		}
 		
 		Integer valorConQuorum = valorMayoritario(comisiones);
 		
@@ -251,7 +254,38 @@ public class Proceso extends Thread {
 			this.variable = valorConQuorum;
 			confirmacionEmitida = true;
 			confirmacion();
+			return;
 		}
+			
+		int restantes = totalProcesos - comisiones.size();
+		
+		if (valorConQuorum == null && !confirmacionEmitida && maxRepeticiones(comisiones) + restantes < quorum()) {
+			
+			confirmacionEmitida = true;
+			
+			for (String url : urls) {
+				enviar(url + "sinConsenso?id=" + id);
+			}
+			
+		}
+		
+	}
+		
+		
+	private int maxRepeticiones(List<Integer> valores) {
+		Map<Integer, Integer> contador = new HashMap<>();
+		int maxx = 0;
+		
+		for (Integer v : valores) {
+			int repeticiones = contador.getOrDefault(v, 0) + 1;
+			contador.put(v, repeticiones);
+			
+			if(repeticiones > maxx) {
+				maxx = repeticiones;
+			}
+		}
+		
+		return maxx;
 	}
 	
 	
@@ -284,5 +318,3 @@ public class Proceso extends Thread {
 	
 	
 }
-
-    

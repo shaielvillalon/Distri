@@ -1,4 +1,4 @@
-    package cliente;
+package cliente;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -9,8 +9,9 @@ import java.util.Scanner;
 public class Cliente {
 	
 	private static final String[] URLS = {
-			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/",
-			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/"
+			"http://192.168.0.213:8080/practicaObligatoria/rest/servicio/",
+			"http://192.168.0.200:8080/practicaObligatoria/rest/servicio/",
+			"http://192.168.0.200:8080/practicaObligatoria/rest/servicio/"
 	};
 
 	public static void main(String[] args) {
@@ -91,20 +92,45 @@ public class Cliente {
 			realizarPeticionSinTexto("reset");
 			realizarPropuesta(valor);
 			
-			try {
-				// Modelo asíncrono simplificado -> espera un tiempo para que los procesos
-				// intercambien compromisos, comisiones y confirmaciones antes de consultar
-				// el resultado
-				Thread.sleep(2000);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-			
-			consultarResultado();
+			esperarResultado();
 		} catch (NumberFormatException e) {
 			System.out.println("Formato incorrecto -> Usa sX (ejemplo: s6)");
 		}
 	}
+	
+	
+	private static void esperarResultado() {
+		
+		long inicio = System.currentTimeMillis();
+	    long timeout = 2000;
+	    
+		while (System.currentTimeMillis() - inicio < timeout) {
+			for (String s : URLS) {
+				String respuesta = obtenerRespuesta(s + "resultado").trim();
+				
+				if (respuesta.startsWith("CONSENSO ALCANZADO")) {
+	                System.out.println(respuesta);
+	                return;
+	            }
+				
+				if (respuesta.equals("NO HAY CONSENSO")) {
+				    System.out.println(respuesta);
+				    return;
+				}
+			}
+			
+			try {
+		            Thread.sleep(50);
+			} catch (InterruptedException e) {
+		            Thread.currentThread().interrupt();
+		            return;
+		     }
+				
+		}
+		System.out.println("NO HAY CONSENSO");
+		
+	}
+	
 	
 
 	private static void realizarPropuesta(int valor) {
@@ -207,5 +233,3 @@ public class Cliente {
 	}
 	
 }
-
-    

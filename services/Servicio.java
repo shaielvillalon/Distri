@@ -1,4 +1,4 @@
-    package services;
+package services;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -25,8 +25,9 @@ import modelo.Proceso;
 public class Servicio {
 	
 	private static final String[] URLS = {
-			"http://192.168.1.253:8080/practicaObligatoria/rest/servicio/",
-			"http://192.168.1.188:8080/practicaObligatoria/rest/servicio/"
+			"http://192.168.0.213:8080/practicaObligatoria/rest/servicio/",
+			"http://192.168.0.200:8080/practicaObligatoria/rest/servicio/",
+			"http://192.168.0.200:8080/practicaObligatoria/rest/servicio/"
 		};
 		
 		// Lista estática de procesos del sistema
@@ -37,8 +38,14 @@ public class Servicio {
 		private static int indiceMaquina;
 		
 		private static final List<Integer> confirmaciones = new CopyOnWriteArrayList<>();
+		private static final List<Integer> negativas = new CopyOnWriteArrayList<>();
+
 		private static volatile boolean consensoNotificado = false;
+		private static volatile boolean sinConsensoNotificado = false;
+		private static volatile boolean noHayConsenso = false;
+
 		private static volatile int valorConsenso = -1;
+
 		
 		static {
 			indiceMaquina = detectarIndice();
@@ -46,9 +53,9 @@ public class Servicio {
 			// Máquina 2 -> procesos 3 y 4
 			// Máquina 3 -> procesos 5 y 6
 			
-			int idLocal = indiceMaquina * 3 + 1; 
+			int idLocal = indiceMaquina * 2 + 1; 
 			
-			for (int i = idLocal; i <= idLocal + 2; i++) {
+			for (int i = idLocal; i <= idLocal + 1; i++) {
 				Proceso p = new Proceso(i, TOTAL, indiceMaquina);
 				p.setServicios(URLS);
 				procesos.add(p);
@@ -230,7 +237,12 @@ public class Servicio {
 		}
 		
 		confirmaciones.clear();
+		negativas.clear();
+		
 		consensoNotificado = false;
+		sinConsensoNotificado = false;
+		noHayConsenso = false;
+		
 		valorConsenso = -1;
 		
 		return "Sistema reiniciado";
@@ -247,10 +259,29 @@ public class Servicio {
 		}
 		
 		confirmaciones.clear();
+		negativas.clear();
+		
 		consensoNotificado = false;
+		sinConsensoNotificado = false;
+		noHayConsenso = false;
+		
 		valorConsenso = -1;
 		
 		return "Sistema reiniciado completamente";
+	}
+	
+	
+	@GET
+	@Path("sinConsenso")
+	@Produces(MediaType.TEXT_PLAIN)
+	public synchronized String sinConsenso(@QueryParam("id") int id) {
+		
+		if (!negativas.contains(id)) {
+			negativas.add(id);
+		}
+		
+		sinConsensoNotificado = true;
+		return "NO HAY CONSENSO";
 	}
 	
 
@@ -261,10 +292,13 @@ public class Servicio {
 		if (consensoNotificado) {
 			return ("CONSENSO ALCANZADO -> valor " + valorConsenso);
 		}
-		return "Todavía no hay consenso confirmado";
+		
+		if (noHayConsenso || sinConsensoNotificado) {
+			return "NO HAY CONSENSO";
+		}
+		
+		return "PENDIENTE";
 	}
 	
 	
 }
-
-    
