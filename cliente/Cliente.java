@@ -9,9 +9,9 @@ import java.util.Scanner;
 public class Cliente {
 	
 	private static final String[] URLS = {
-			"http://192.168.0.213:8080/practicaObligatoria/rest/servicio/",
+			"http://192.168.0.229:8080/practicaObligatoria/rest/servicio/",
 			"http://192.168.0.200:8080/practicaObligatoria/rest/servicio/",
-			"http://192.168.0.200:8080/practicaObligatoria/rest/servicio/"
+			"http://192.168.0.201:8080/practicaObligatoria/rest/servicio/"
 	};
 
 	public static void main(String[] args) {

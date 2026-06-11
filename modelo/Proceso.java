@@ -225,6 +225,7 @@ public class Proceso extends Thread {
 		Integer valorConQuorum = valorMayoritario(compromisos);
 		
 		if (valorConQuorum != null && !comisionEmitida) {
+			this.variable = valorConQuorum;
 			comisionEmitida = true;
 			
 			
@@ -251,7 +252,7 @@ public class Proceso extends Thread {
 		Integer valorConQuorum = valorMayoritario(comisiones);
 		
 		if (valorConQuorum != null && !confirmacionEmitida) {
-			this.variable = valorConQuorum;
+			//this.variable = valorConQuorum;
 			confirmacionEmitida = true;
 			confirmacion();
 			return;
